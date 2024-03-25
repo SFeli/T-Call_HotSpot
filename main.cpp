@@ -15,7 +15,6 @@
 #define TINY_GSM_RX_BUFFER   1024  // Set RX buffer to 1Kb
 
 // Libraries which has to be installed
-#include <Arduino.h>
 #include <TinyGsmClient.h>         // Library by Volodymyr Shymanskyy version Y 0.11.7
 #include <Wire.h>
 #include <WiFiClient.h>   
@@ -62,7 +61,7 @@ void WiFiEvent(WiFiEvent_t);                // all events of WiFi - Server
 void process(WiFiClient);                   // the process routine
 bool setPowerBoostKeepOn(int);              // function to set Boost-Power
 
-char* TAG = "GSM_module";
+char* TAG = (char []){"GSM_module"};
 
 /**
  * Mainroutine: Setup
