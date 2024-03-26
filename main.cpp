@@ -60,6 +60,7 @@ const int  port = 80;                    // default port of demo Website    http
 void WiFiEvent(WiFiEvent_t);                // all events of WiFi - Server 
 void process(WiFiClient);                   // the process routine
 bool setPowerBoostKeepOn(int);              // function to set Boost-Power
+void test();                                // the testrun
 
 char* TAG = (char []){"GSM_module"};
 
@@ -122,7 +123,10 @@ void setup() {
     ESP_LOGI(TAG, "Modem Info: %s", modemInfo);
     ESP_LOGI(TAG, "Modem IMEI: %s", modem.getIMEI().c_str());
     ESP_LOGI(TAG, "Modem Connected: %d", modem.isGprsConnected());
-    ESP_LOGI(TAG, "Modem Status:    %d", modem.getSimStatus());  
+    ESP_LOGI(TAG, "Modem Status:    %d", modem.getSimStatus()); 
+
+// Testconnection to Demo-Page
+    test();
 }
 
 /**
@@ -349,3 +353,59 @@ bool setPowerBoostKeepOn(int en)
   return Wire.endTransmission() == 0;
 }
 
+/**
+ * Function test
+ * InputParameter:      non
+ *   1. create connection to testserver and read one page
+ *   2. output on console
+*/
+void test() {
+    // Netzwerk initialisieren und Modem tiiii tööööö ti tit ti so wie bei alten Modem 14400 ... 
+    ESP_LOGI(TAG,"Waiting for network ...");
+    if (!modem.waitForNetwork(240000L)) {
+        ESP_LOGE(TAG,"Modem - network failed");
+        delay(10000);
+        return;
+    }
+    ESP_LOGI(TAG, "Modem network aviable");
+    if (modem.isNetworkConnected()) {
+        ESP_LOGD(TAG,"Modem - network connected");
+    }
+
+    if (!modem.gprsConnect(apn, gprsUser, gprsPass)) {
+        ESP_LOGE(TAG, "Modem APN-connection failed");
+        delay(10000);
+        return;
+    }
+    ESP_LOGI(TAG, "Modem APN-connection established with APN: %s", apn);
+
+    bool modemInfo = modem.isGprsConnected();
+    ESP_LOGI(TAG,"Modem connected: %d", modemInfo);
+
+    if (!Webclient.connect(server, port)) {
+        ESP_LOGE(TAG,"Modem connection to server: %s failed", server);
+        delay(10000);
+        return;
+    } 
+    ESP_LOGI(TAG,"Modem connection to server: %s established", server);
+
+    // Make a HTTP GET request:
+    ESP_LOGI(TAG,"Performing HTTP GET request...");
+    Webclient.print(String("GET ") + web_page + " HTTP/1.1\r\n");
+    Webclient.print(String("Host: ") + server + "\r\n");
+    Webclient.print("Connection: close\r\n\r\n");
+    Webclient.println();
+
+    unsigned long timeout = millis();
+    while (Webclient.connected() && millis() - timeout < 10000L) {
+        // Print available data in console
+        while (Webclient.available()) {
+          char c = Webclient.read();
+          SerialMonitor.print(c);
+          timeout = millis();
+        }
+    }
+    SerialMonitor.println();
+    Webclient.stop();          // Verindung zum Web-Server abbauen
+    ESP_LOGI(TAG,"Web-Server disconnected");
+}
